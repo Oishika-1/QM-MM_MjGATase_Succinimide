@@ -1,6 +1,0 @@
-############################################################################################################################
-This folder contains input files for classical molecular dynamics simulations with gromacs for studying succinimide formation reaction in MjGATase using GROMOS (0.GROMOS54a7) and AMBER (1.AMBER99SB-Star-ILDN) family of force fields sequentially.
-
-Each subfolder contains the input parameter files, topology file and run initial coordinate files.
-
-
