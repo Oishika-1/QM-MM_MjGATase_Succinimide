@@ -1,1 +1,2 @@
-# QM-MM_MjGATase_Succinimide
+############################################################################################################################
+This contains input files used for running classical molecular dynamics and QM/MM simulations for succinimide formation (Post-translational Modification, a spontaneous autocatalyzed reaction) in MjGATase in water using GROMACS and CP2K softwares, respectively.
