@@ -1,0 +1,199 @@
+@SET TOP ../topology/mj-wt-modified.prmtop
+&GLOBAL
+  ECHO_INPUT
+  PRINT_LEVEL LOW
+  PROJECT QMMM-qmbox20-metaD
+  RUN_TYPE MD
+  SAVE_MEM TRUE
+&END GLOBAL
+
+&FORCE_EVAL
+  METHOD QMMM
+  STRESS_TENSOR ANALYTICAL
+
+  &DFT
+    CHARGE 0					! manually change the value
+    MULTIPLICITY 1
+    WFN_RESTART_FILE_NAME ../equilibration/3.NVT-electrostatic-embedding/REACT-NVT-EE-GPW-RESTART.wfn
+    &MGRID
+      COMMENSURATE  .TRUE. 
+      CUTOFF 300
+    &END MGRID
+    &QS
+      METHOD GPW
+    &END QS
+    &SCF
+      MAX_SCF 30
+      EPS_SCF 1.0E-6
+      SCF_GUESS RESTART 
+      &OT
+        MINIMIZER DIIS
+        PRECONDITIONER FULL_ALL
+	SAFE_DIIS TRUE
+      &END OT
+      &OUTER_SCF
+        EPS_SCF 1.0E-6
+        MAX_SCF 10
+      &END OUTER_SCF
+    &END SCF
+    &XC
+      &XC_FUNCTIONAL PBE
+      &END XC_FUNCTIONAL
+      &VDW_POTENTIAL
+        POTENTIAL_TYPE PAIR_POTENTIAL
+        &PAIR_POTENTIAL
+          REFERENCE_FUNCTIONAL PBE
+          TYPE DFTD3                                                 !Grimme D3 correction
+          PARAMETER_FILE_NAME ../basisset/dftd3.dat
+          LONG_RANGE_CORRECTION .FALSE.
+        &END PAIR_POTENTIAL
+      &END VDW_POTENTIAL
+    &END XC
+  &END DFT
+  &MM
+    &FORCEFIELD
+      EI_SCALE14 0.8333
+      VDW_SCALE14 0.5000
+      PARMTYPE AMBER
+      PARM_FILE_NAME $TOP 
+      &SPLINE
+        EMAX_SPLINE 1.0E8
+        RCUT_NB [angstrom] 10
+      &END SPLINE
+    &END FORCEFIELD
+    &POISSON
+      &EWALD
+        EWALD_TYPE SPME
+        ALPHA .40
+        GMAX 80
+      &END EWALD
+    &END POISSON
+  &END MM
+  &QMMM
+    ECOUPL GAUSS
+    USE_GEEP_LIB 6
+    &CELL
+      ABC [angstrom] 15 15 15
+    &END CELL
+    &QM_KIND O
+      MM_INDEX 1705 1706 1696 1691 2491 1682 
+    &END QM_KIND
+    &QM_KIND C
+      MM_INDEX 1699 1701 1704 1695 1685 1687 1690 2493 2490 2488 2486 2485 2495 2482 1681 2361 2358 2355 2352
+    &END QM_KIND
+    &QM_KIND H
+      MM_INDEX 1700 1702 1703 1698 1686 1688 1689 1693 1694 1684 2494 2496 2487 2489 2492 2483 2484 2366 2367 2365 2362 2363 2359 2360 2356 2357 2354 2353 
+    &END QM_KIND
+    &QM_KIND N
+      MM_INDEX 1697 1692 1683 2364
+    &END QM_KIND
+
+    &LINK
+      LINK_TYPE IMOMM
+      QM_INDEX 1699 
+      MM_INDEX 1707
+    &END LINK
+    &LINK
+      LINK_TYPE IMOMM
+      QM_INDEX 1681
+      MM_INDEX 1670
+    &END LINK
+    &LINK
+      LINK_TYPE IMOMM
+      QM_INDEX 2482
+      MM_INDEX 2480
+    &END LINK
+    &LINK
+      LINK_TYPE IMOMM
+      QM_INDEX 2352
+      MM_INDEX 2350
+    &END LINK
+  &END QMMM
+  &SUBSYS
+    &CELL
+      ABC [angstrom] 71.695999 71.695999 71.695999 
+      ALPHA_BETA_GAMMA 90.00 90.00 90.00
+    &END CELL
+    &TOPOLOGY
+      CONN_FILE_FORMAT AMBER
+      CONN_FILE_NAME $TOP 
+!      COORD_FILE_FORMAT CRD
+!      COORD_FILE_NAME ./mj-wt.crd
+    &END TOPOLOGY
+    &KIND NA+
+     ELEMENT Na
+    &END KIND
+    &KIND C
+      BASIS_SET DZVP-GTH-PBE
+      POTENTIAL GTH-PBE-q4
+    &END KIND
+    &KIND O
+      BASIS_SET DZVP-GTH-PBE
+      POTENTIAL GTH-PBE-q6
+    &END KIND
+    &KIND H
+      BASIS_SET DZVP-GTH-PBE
+      POTENTIAL GTH-PBE-q1
+    &END KIND
+    &KIND N
+      BASIS_SET DZVP-GTH-PBE
+      POTENTIAL GTH-PBE-q5
+    &END KIND
+  &END SUBSYS
+&END FORCE_EVAL
+
+&MOTION
+  &MD
+    &THERMOSTAT
+      &CSVR
+        TIMECON 100
+      &END CSVR
+      &DEFINE_REGION
+        MM_SUBSYS ATOMIC
+        QM_SUBSYS ATOMIC
+      &END DEFINE_REGION
+      TYPE CSVR 
+    &END THERMOSTAT
+  ENSEMBLE NVT
+  TIMESTEP [fs] 0.5
+  STEPS    20000  !10000 fs = 10ps
+  TEMPERATURE 298.0
+  &END MD
+
+   &PRINT
+    &RESTART                                    ! This section controls the printing of restart files
+      &EACH                                     ! A restart file will be printed every 1000 md steps
+        MD 1000
+      &END EACH
+      ADD_LAST NUMERIC
+      SPLIT_RESTART_FILE TRUE
+    &END RESTART
+    &RESTART_HISTORY                            ! This section controls dumping of unique restart files during the run keeping all of them.Most useful if recovery is needed at a later point.
+      &EACH                                     ! A new restart file will be printed every 1000 md steps
+        MD 5000
+      &END EACH
+      ADD_LAST NUMERIC
+    &END RESTART_HISTORY
+    &TRAJECTORY                                 ! This section Controls the output of the trajectory
+      FORMAT DCD                                ! Format of the output trajectory is DCD
+      &EACH                                     ! New trajectory frame will be printed each 1 md step
+        MD 1
+      &END EACH
+      ADD_LAST NUMERIC
+    &END TRAJECTORY
+  &END PRINT
+
+  &FREE_ENERGY
+     &METADYN
+       USE_PLUMED .TRUE.
+       PLUMED_INPUT_FILE ./plumed-metaD-nayana.dat
+     &END METADYN
+  &END FREE_ENERGY
+&END MOTION
+
+&EXT_RESTART
+  RESTART_FILE_NAME ../equilibration/3.NVT-electrostatic-embedding/REACT-NVT-EE-GPW-1.restart 
+  BINARY_RESTART_FILE_NAME ../equilibration/3.NVT-electrostatic-embedding/REACT-NVT-EE-GPW-1.restart.bin 
+!  RESTART_COUNTERS .FALSE.
+!  RESTART_THERMOSTAT .FALSE.
+&END

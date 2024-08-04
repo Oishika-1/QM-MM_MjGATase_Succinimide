@@ -1,0 +1,173 @@
+@SET TOP ../../topology/mj-wt.prmtop
+&GLOBAL
+  ECHO_INPUT
+  PRINT_LEVEL LOW
+  PROJECT EM-ME
+  RUN_TYPE GEO_OPT
+  SAVE_MEM 
+&END GLOBAL
+
+&FORCE_EVAL
+  METHOD QMMM
+  &DFT
+    BASIS_SET_FILE_NAME ../../basisset/BASIS_SET 
+    POTENTIAL_FILE_NAME ../../basisset/POTENTIAL 
+    CHARGE 0				! CHARGE changed.
+    MULTIPLICITY 1
+!    WFN_RESTART_FILE_NAME EM-ME-${FRAMEID}-RESTART.wfn
+    &MGRID
+      COMMENSURATE .TRUE.		! .TRUE. added 
+      CUTOFF 300
+    &END MGRID
+    &SCF
+      EPS_SCF 1.0E-6
+      MAX_SCF 60
+      SCF_GUESS RESTART
+      &OT
+        MINIMIZER DIIS
+        PRECONDITIONER FULL_ALL		! preconditioner changed.
+        SAFE_DIIS TRUE
+      &END OT
+      &OUTER_SCF
+        EPS_SCF 1.0E-6
+        MAX_SCF 30
+      &END OUTER_SCF
+    &END SCF
+    &XC
+      &XC_FUNCTIONAL PBE
+      &END XC_FUNCTIONAL
+      &VDW_POTENTIAL			! VDW_POTENTIAL subsection added.
+        POTENTIAL_TYPE PAIR_POTENTIAL
+        &PAIR_POTENTIAL
+          REFERENCE_FUNCTIONAL PBE
+          TYPE  DFTD3
+          PARAMETER_FILE_NAME ../../basisset/dftd3.dat 
+          LONG_RANGE_CORRECTION .FALSE.
+          VERBOSE_OUTPUT  TRUE
+        &END PAIR_POTENTIAL
+      &END VDW_POTENTIAL
+    &END XC
+  &END DFT
+  &MM
+    &FORCEFIELD
+      EI_SCALE14 0.8333
+      VDW_SCALE14 0.5000
+      PARMTYPE AMBER
+      PARM_FILE_NAME $TOP
+      &SPLINE
+        EMAX_SPLINE 1.0E8
+        RCUT_NB [angstrom] 10
+      &END SPLINE
+    &END FORCEFIELD
+    &POISSON
+      &EWALD
+        EWALD_TYPE SPME
+        ALPHA .40
+        GMAX 80
+      &END EWALD
+    &END POISSON
+  &END MM
+  &QMMM
+    ECOUPL NONE
+    USE_GEEP_LIB 6
+     &CELL
+       ABC [angstrom] 15 15 15
+     &END CELL
+    &QM_KIND O
+      MM_INDEX 1705 1706 1696 1691 2491 1682 
+    &END QM_KIND
+    &QM_KIND C
+      MM_INDEX 1699 1701 1704 1695 1685 1687 1690 2493 2490 2488 2486 2485 2495 2482 1681 2361 2358 2355 2352
+    &END QM_KIND
+    &QM_KIND H
+      MM_INDEX 1700 1702 1703 1698 1686 1688 1689 1693 1694 1684 2494 2496 2487 2489 2492 2483 2484 2366 2367 2365 2362 2363 2359 2360 2356 2357 2354 2353
+    &END QM_KIND
+    &QM_KIND N
+      MM_INDEX 1697 1692 1683 2364
+    &END QM_KIND
+    &LINK
+      LINK_TYPE IMOMM
+      QM_INDEX 1699 
+      MM_INDEX 1707
+    &END LINK
+    &LINK
+      LINK_TYPE IMOMM
+      QM_INDEX 1681
+      MM_INDEX 1670
+    &END LINK
+    &LINK
+      LINK_TYPE IMOMM
+      QM_INDEX 2482 
+      MM_INDEX 2480
+    &END LINK
+    &LINK
+      LINK_TYPE IMOMM
+      QM_INDEX 2352 
+      MM_INDEX 2350
+    &END LINK
+  &END QMMM
+  &SUBSYS
+    &CELL
+      ABC [angstrom] 71.695999 71.695999 71.695999 
+      ALPHA_BETA_GAMMA 90.00 90.00 90.00
+      PERIODIC XYZ
+    &END CELL
+    &TOPOLOGY
+      CONN_FILE_FORMAT AMBER
+      CONN_FILE_NAME $TOP
+      COORD_FILE_NAME ../../topology/framenumber-79-wrapped.pdb 
+      COORD_FILE_FORMAT PDB
+    &END TOPOLOGY
+    &KIND NA+
+     ELEMENT Na
+    &END KIND
+    &KIND C
+      BASIS_SET DZVP-GTH-PBE
+      POTENTIAL GTH-PBE-q4
+    &END KIND
+    &KIND O
+      BASIS_SET DZVP-GTH-PBE
+      POTENTIAL GTH-PBE-q6
+    &END KIND
+    &KIND H
+      BASIS_SET DZVP-GTH-PBE
+      POTENTIAL GTH-PBE-q1
+    &END KIND
+    &KIND N
+      BASIS_SET DZVP-GTH-PBE
+      POTENTIAL GTH-PBE-q5
+    &END KIND
+  &END SUBSYS
+&END FORCE_EVAL
+
+&MOTION
+  &GEO_OPT
+    OPTIMIZER LBFGS
+    MAX_ITER 100
+    MAX_DR    1.0E-02 !Convergence criterion for the maximum geometry change between the current and the last optimizer iteration
+    RMS_DR    5.0E-03 !Convergence criterion for the root mean square (RMS) geometry change between the current and the last optimizer iteration
+    MAX_FORCE 1.0E-02 !Convergence criterion for the maximum force component of the current configuration
+    RMS_FORCE 5.0E-03 !Convergence criterion for the root mean square (RMS) force of the current configuration
+  &END GEO_OPT
+  &PRINT
+    &TRAJECTORY                                 ! Controls the output of the trajectory
+      FORMAT XYZ                                ! Format of the output trajectory is XYZ
+      ADD_LAST NUMERIC                          ! Last trajectory frame printed at the end of the calculation
+      &EACH                                     ! New trajectory frame will be printed each 100 md steps
+	    GEO_OPT 1
+      &END EACH
+    &END TRAJECTORY
+    &RESTART                                    ! This section controls the printing of restart files
+      ADD_LAST NUMERIC
+    &END RESTART
+    &RESTART_HISTORY
+      ADD_LAST NUMERIC
+    &END RESTART_HISTORY
+  &END PRINT
+&END MOTION
+
+!&EXT_RESTART
+!  RESTART_FILE_NAME EM-ME-${FRAMEID}-1.restart
+!  RESTART_COUNTERS .FALSE.
+!  RESTART_THERMOSTAT .FALSE.
+!&END
